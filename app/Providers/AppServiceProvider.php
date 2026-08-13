@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Domain\Pricing\PriceCalendar;
 use App\Domain\Pricing\PriceProvider;
 use App\Domain\Pricing\TariffProvider;
 use App\Infrastructure\Elering\CachedEleringPriceProvider;
@@ -42,6 +43,13 @@ final class AppServiceProvider extends ServiceProvider
             (string) config('prices.zone'),
             (int) config('prices.cache.unsettled_ttl_seconds'),
             (int) config('prices.cache.settled_ttl_seconds'),
+            (int) config('prices.cache.upstream_down_ttl_seconds'),
+        ));
+
+        $this->app->singleton(PriceCalendar::class, fn ($app): PriceCalendar => new PriceCalendar(
+            $app->make(DateTimeZone::class),
+            (int) config('prices.calendar.past_days'),
+            (int) config('prices.calendar.future_days'),
         ));
     }
 }

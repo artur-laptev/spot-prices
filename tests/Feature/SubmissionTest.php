@@ -79,6 +79,29 @@ final class SubmissionTest extends TestCase
     }
 
     #[Test]
+    public function a_date_outside_the_calendar_never_reaches_elering(): void
+    {
+        $response = $this->from(route('prices'))->post(route('submit'), $this->validPayload([
+            'date' => '1900-01-01',
+        ]));
+
+        $response->assertRedirect(route('prices'));
+        $response->assertSessionHas('submission_error');
+        Http::assertNothingSent();
+        Mail::assertNothingSent();
+    }
+
+    #[Test]
+    public function repeated_submissions_are_throttled(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post(route('submit'), $this->validPayload())->assertRedirect();
+        }
+
+        $this->post(route('submit'), $this->validPayload())->assertStatus(429);
+    }
+
+    #[Test]
     public function personal_details_are_not_flashed_back_into_the_session(): void
     {
         $this->from(route('prices'))->post(route('submit'), $this->validPayload(['email' => 'nope']));

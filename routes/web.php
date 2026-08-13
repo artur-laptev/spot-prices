@@ -7,4 +7,6 @@ use App\Http\Controllers\SubmissionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', PricePageController::class)->name('prices');
-Route::post('/submit', SubmissionController::class)->name('submit');
+Route::post('/submit', SubmissionController::class)
+    ->middleware('throttle:5,1')
+    ->name('submit');

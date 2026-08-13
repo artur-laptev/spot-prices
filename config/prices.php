@@ -34,6 +34,7 @@ return [
     'cache' => [
         'unsettled_ttl_seconds' => 900,
         'settled_ttl_seconds' => 2592000,
+        'upstream_down_ttl_seconds' => 30,
     ],
 
     'submission' => [

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Domain\Pricing\Indicators;
+use App\Application\Pricing\BuildPricePage;
+use App\Domain\Pricing\DayOutOfRange;
 use App\Domain\Pricing\LocalDay;
 use App\Domain\Pricing\PriceCalendar;
-use App\Domain\Pricing\PriceProvider;
 use App\Domain\Pricing\PricesUnavailable;
-use App\Domain\Pricing\TariffProvider;
 use App\Http\ViewModels\PricePage;
 use DateTimeZone;
 use Illuminate\Contracts\View\View;
@@ -19,23 +18,35 @@ use Illuminate\Http\Request;
 final class PricePageController
 {
     public function __construct(
-        private readonly PriceProvider $prices,
-        private readonly TariffProvider $tariffs,
+        private readonly BuildPricePage $pages,
+        private readonly PriceCalendar $calendar,
         private readonly DateTimeZone $timezone,
     ) {}
 
     public function __invoke(Request $request): View|RedirectResponse
     {
-        $calendar = $this->calendar();
-        $day = $this->requestedDay($request, $calendar);
+        $day = $this->requestedDay($request);
         $windowHours = $this->requestedWindowHours($request);
 
         if ($day === null || $windowHours === null) {
             return redirect()->route('prices');
         }
 
+        try {
+            $page = $this->pages->for($day, $windowHours);
+        } catch (DayOutOfRange) {
+            return redirect()->route('prices');
+        } catch (PricesUnavailable) {
+            $page = PricePage::unavailable(
+                $day,
+                $windowHours,
+                $this->calendar->earliest(),
+                $this->calendar->latest(),
+            );
+        }
+
         return view('prices', [
-            'page' => $this->pageFor($day, $windowHours, $calendar),
+            'page' => $page,
             'windowOptions' => range(
                 (int) config('prices.window.min_hours'),
                 (int) config('prices.window.max_hours'),
@@ -43,47 +54,19 @@ final class PricePageController
         ]);
     }
 
-    private function pageFor(LocalDay $day, float $windowHours, PriceCalendar $calendar): PricePage
-    {
-        try {
-            $snapshot = $this->prices->snapshotFor($day);
-        } catch (PricesUnavailable) {
-            return PricePage::unavailable($day, $windowHours, $calendar->earliest(), $calendar->latest());
-        }
-
-        return PricePage::from(
-            $snapshot,
-            Indicators::for($snapshot->series, $windowHours),
-            $this->tariffs->current(),
-            $calendar->earliest(),
-            $calendar->latest(),
-        );
-    }
-
-    private function calendar(): PriceCalendar
-    {
-        return new PriceCalendar(
-            $this->timezone,
-            (int) config('prices.calendar.past_days'),
-            (int) config('prices.calendar.future_days'),
-        );
-    }
-
-    private function requestedDay(Request $request, PriceCalendar $calendar): ?LocalDay
+    private function requestedDay(Request $request): ?LocalDay
     {
         $date = $request->query('date');
 
         if ($date === null) {
-            return $calendar->today();
+            return $this->calendar->today();
         }
 
         if (! is_string($date) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
             return null;
         }
 
-        $day = LocalDay::fromIsoDate($date, $this->timezone);
-
-        return $calendar->allows($day) ? $day : null;
+        return LocalDay::fromIsoDate($date, $this->timezone);
     }
 
     private function requestedWindowHours(Request $request): ?float

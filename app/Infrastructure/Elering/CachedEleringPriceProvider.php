@@ -23,6 +23,7 @@ final readonly class CachedEleringPriceProvider implements PriceProvider
         private string $zone,
         private int $unsettledTtlSeconds,
         private int $retentionSeconds,
+        private int $upstreamDownTtlSeconds,
     ) {}
 
     public function snapshotFor(LocalDay $day): PriceSnapshot
@@ -33,9 +34,19 @@ final readonly class CachedEleringPriceProvider implements PriceProvider
             return $this->toSnapshot($day, $cached, servedFromStaleCache: false);
         }
 
+        if ($this->isUpstreamDown()) {
+            if ($cached !== null) {
+                return $this->toSnapshot($day, $cached, servedFromStaleCache: true);
+            }
+
+            throw PricesUnavailable::for($day);
+        }
+
         try {
             $rows = $this->client->fetchDay($day, $this->zone);
         } catch (PricesUnavailable $e) {
+            $this->markUpstreamDown();
+
             if ($cached !== null) {
                 return $this->toSnapshot($day, $cached, servedFromStaleCache: true);
             }
@@ -47,6 +58,24 @@ final readonly class CachedEleringPriceProvider implements PriceProvider
         $this->cache->put($this->cacheKey($day), $entry, $this->retentionSeconds);
 
         return $this->toSnapshot($day, $entry, servedFromStaleCache: false);
+    }
+
+    private function isUpstreamDown(): bool
+    {
+        return $this->upstreamDownTtlSeconds > 0
+            && $this->cache->get($this->upstreamDownKey()) !== null;
+    }
+
+    private function markUpstreamDown(): void
+    {
+        if ($this->upstreamDownTtlSeconds > 0) {
+            $this->cache->put($this->upstreamDownKey(), true, $this->upstreamDownTtlSeconds);
+        }
+    }
+
+    private function upstreamDownKey(): string
+    {
+        return "elering:{$this->zone}:down";
     }
 
     /**

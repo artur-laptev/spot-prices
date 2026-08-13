@@ -80,6 +80,28 @@ final class PricePageTest extends TestCase
     }
 
     #[Test]
+    public function a_second_visit_during_an_outage_does_not_wait_on_elering_again(): void
+    {
+        $day = $this->today();
+        Http::fake(['*' => Http::sequence()
+            ->push($this->payloadFor($day, 24, 3600))
+            ->whenEmpty(Http::response(status: 503)),
+        ]);
+
+        $this->get(route('prices', ['date' => $day->toIsoDate()]))->assertOk();
+        $this->travel(2)->hours();
+
+        $this->get(route('prices', ['date' => $day->toIsoDate()]))->assertOk();
+        $attemptsAfterFirstFailure = Http::recorded()->count();
+
+        $this->get(route('prices', ['date' => $day->toIsoDate()]))
+            ->assertOk()
+            ->assertSee('Showing cached prices retrieved at');
+
+        $this->assertSame($attemptsAfterFirstFailure, Http::recorded()->count());
+    }
+
+    #[Test]
     public function it_serves_a_cached_day_without_calling_elering_again(): void
     {
         $day = $this->today();
