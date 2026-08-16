@@ -12,8 +12,20 @@ use App\Domain\Pricing\Tariff;
 use App\Domain\Pricing\Window;
 use DateTimeImmutable;
 
+/**
+ * @phpstan-type Money array{eurPerMwh: float, exchangeSntKwh: float, retailSntKwhInclVat: float}
+ * @phpstan-type WindowSummary array{range: string, startsAt: string, eurPerMwh: float, exchangeSntKwh: float, retailSntKwhInclVat: float}
+ * @phpstan-type PeriodRow array{startsAtUtc: string, label: string, range: string, exchangeEurPerMwh: float, exchangeSntKwh: float, retailSntKwhInclVat: float, belowAverage: bool, inCheapestWindow: bool, inPriciestWindow: bool}
+ * @phpstan-type Summary array{minimum: Money, maximum: Money, average: Money, cheapestWindow: WindowSummary|null, priciestWindow: WindowSummary|null}
+ * @phpstan-type Notice array{level: string, message: string}
+ */
 final readonly class PricePage
 {
+    /**
+     * @param  list<PeriodRow>  $rows
+     * @param  Summary|array{}  $summary
+     * @param  list<Notice>  $notices
+     */
     private function __construct(
         public string $isoDate,
         public string $headline,
@@ -77,6 +89,9 @@ final readonly class PricePage
         return json_encode($this->rows, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @return list<PeriodRow>
+     */
     private static function buildRows(PriceSnapshot $snapshot, Indicators $indicators, Tariff $tariff): array
     {
         $timezone = $snapshot->series->day()->timezone();
@@ -101,6 +116,9 @@ final readonly class PricePage
         );
     }
 
+    /**
+     * @return Summary|array{}
+     */
     private static function buildSummary(Indicators $indicators, Tariff $tariff, LocalDay $day): array
     {
         if ($indicators->meanEurPerMwh === null) {
@@ -116,6 +134,9 @@ final readonly class PricePage
         ];
     }
 
+    /**
+     * @return Money
+     */
     private static function money(float $eurPerMwh, Tariff $tariff): array
     {
         $retail = $tariff->retailSntKwh($eurPerMwh);
@@ -127,6 +148,9 @@ final readonly class PricePage
         ];
     }
 
+    /**
+     * @return WindowSummary|null
+     */
     private static function window(?Window $window, Tariff $tariff, LocalDay $day): ?array
     {
         if ($window === null) {
@@ -145,6 +169,9 @@ final readonly class PricePage
         ] + self::money($window->meanEurPerMwh(), $tariff);
     }
 
+    /**
+     * @return list<Notice>
+     */
     private static function buildNotices(PriceSnapshot $snapshot, Indicators $indicators, LocalDay $day): array
     {
         $notices = [];
