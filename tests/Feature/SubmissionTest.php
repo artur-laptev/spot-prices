@@ -111,6 +111,10 @@ final class SubmissionTest extends TestCase
         $this->assertNull(session('_old_input.phone'));
     }
 
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
     private function validPayload(array $overrides = []): array
     {
         return array_merge([
@@ -129,6 +133,9 @@ final class SubmissionTest extends TestCase
         return LocalDay::today(new DateTimeZone('Europe/Tallinn'));
     }
 
+    /**
+     * @return array{success: bool, data: array{ee: list<array{timestamp: int, price: float}>}}
+     */
     private function payloadFor(LocalDay $day): array
     {
         $rows = [];

@@ -144,6 +144,9 @@ final class PricePageTest extends TestCase
         return LocalDay::today(new DateTimeZone('Europe/Tallinn'));
     }
 
+    /**
+     * @return array{success: bool, data: array{ee: list<array{timestamp: int, price: float}>}}
+     */
     private function payloadFor(LocalDay $day, int $count, int $stepSeconds): array
     {
         $rows = [];

@@ -10,6 +10,7 @@ use App\Domain\Pricing\PriceReading;
 trait MakesReadings
 {
     /**
+     * @param  list<float>|null  $prices
      * @return list<PriceReading>
      */
     private function hourlyReadings(LocalDay $day, int $count, ?array $prices = null): array

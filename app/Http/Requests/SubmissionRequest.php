@@ -9,6 +9,9 @@ use Illuminate\Foundation\Http\FormRequest;
 
 final class SubmissionRequest extends FormRequest
 {
+    /**
+     * @return array<string, list<string>>
+     */
     public function rules(): array
     {
         return [
