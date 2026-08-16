@@ -4,4 +4,4 @@ The European day-ahead market moved to a 15-minute settlement period in October 
 
 ## Consequences
 
-No constant `24`, `3600` or `count($prices) === 24` may appear anywhere. Window length is expressed in hours by the user and converted to a period count at calculation time via the series' own resolution.
+No constant `24` and no `count($prices) === 24` may appear anywhere, and no code may assume how long a period lasts. Window length is expressed in hours by the user and converted to a period count at calculation time via the series' own resolution — `WindowFinder::periodsPerWindow()` is the single place where hours meet seconds, and it reads the resolution from the data rather than assuming one.

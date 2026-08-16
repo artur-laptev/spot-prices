@@ -30,3 +30,5 @@ Thumbs.db
 /.agents
 /.claude
 /skills-lock.json
+
+/task.md
