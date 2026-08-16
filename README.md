@@ -19,7 +19,7 @@ vendor/bin/pint           # PSR-12 formatting
 vendor/bin/phpstan        # static analysis, level 6
 ```
 
-GitHub Actions runs all three on every push and pull request, against PHP 8.3 and 8.4 (`.github/workflows/ci.yml`).
+GitHub Actions runs all three on every push and pull request (`.github/workflows/ci.yml`).
 
 ## What it does
 

@@ -5,7 +5,7 @@
     "description": "Nord Pool day-ahead spot prices for the Estonian bidding zone.",
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "laravel/framework": "^13.17"
     },
     "require-dev": {
